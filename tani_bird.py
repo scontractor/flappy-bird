@@ -1,4 +1,5 @@
 import pygame
+import pygame.freetype
 import random
 import os
 
@@ -9,7 +10,7 @@ pygame.init()
 WIDTH = 400
 HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Flappy Bird")
+pygame.display.set_caption("Tani Bird")
 
 # Colors
 WHITE = (255, 255, 255)
@@ -22,12 +23,18 @@ current_path = os.path.dirname(__file__)
 image_path = os.path.join(current_path, 'images')
 
 background = pygame.image.load(os.path.join(image_path, 'background.jpg')).convert()
-bird_img = pygame.image.load(os.path.join(image_path, 'bird.png')).convert_alpha()
+bird_img = pygame.image.load(os.path.join(image_path, 'tani.png')).convert_alpha()
 pipe_img = pygame.image.load(os.path.join(image_path, 'pipe.png')).convert_alpha()
+
+# Load fonts
+font = pygame.font.Font(None, 36)
+try:
+    fancy_font = pygame.freetype.Font(os.path.join(current_path, "fancy_font.ttf"), 72)
+except:
+    fancy_font = pygame.freetype.SysFont("Arial", 72)
 
 # Game variables
 score = 0
-font = pygame.font.Font(None, 36)
 fullscreen = False
 
 
@@ -88,13 +95,32 @@ def draw_button(text, x, y, width, height, color, text_color):
 
 def game_over_screen():
     screen.blit(background, (0, 0))
-    game_over_text = font.render("Game Over", True, RED)
-    score_text = font.render(f"Score: {score}", True, WHITE)
-    screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 3))
-    screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, HEIGHT // 2))
 
-    draw_button("Try Again", WIDTH // 4 - 70, HEIGHT * 3 // 4, 140, 50, GREEN, WHITE)
-    draw_button("Quit Game", WIDTH * 3 // 4 - 70, HEIGHT * 3 // 4, 140, 50, RED, WHITE)
+    # Draw "Tani Bird" in large, attractive text
+    text_surface, _ = fancy_font.render("Tani Bird", WHITE)
+    text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 4))
+    screen.blit(text_surface, text_rect)
+
+    # Add a decorative underline
+    pygame.draw.line(screen, WHITE,
+                     (text_rect.left, text_rect.bottom + 5),
+                     (text_rect.right, text_rect.bottom + 5), 3)
+
+    # Game Over text
+    game_over_text = font.render("Game Over", True, RED)
+    game_over_rect = game_over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 30))
+    screen.blit(game_over_text, game_over_rect)
+
+    # Score text
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
+    screen.blit(score_text, score_rect)
+
+    # Buttons
+    button_width, button_height = 140, 50
+    draw_button("Try Again", WIDTH // 4 - button_width // 2, HEIGHT * 3 // 4, button_width, button_height, GREEN, WHITE)
+    draw_button("Quit Game", WIDTH * 3 // 4 - button_width // 2, HEIGHT * 3 // 4, button_width, button_height, RED,
+                WHITE)
 
     pygame.display.flip()
 
@@ -105,11 +131,13 @@ def game_over_screen():
                 return False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                if WIDTH // 4 - 70 <= mouse_pos[0] <= WIDTH // 4 + 70 and HEIGHT * 3 // 4 <= mouse_pos[
-                    1] <= HEIGHT * 3 // 4 + 50:
+                if WIDTH // 4 - button_width // 2 <= mouse_pos[
+                    0] <= WIDTH // 4 + button_width // 2 and HEIGHT * 3 // 4 <= mouse_pos[
+                    1] <= HEIGHT * 3 // 4 + button_height:
                     return True
-                elif WIDTH * 3 // 4 - 70 <= mouse_pos[0] <= WIDTH * 3 // 4 + 70 and HEIGHT * 3 // 4 <= mouse_pos[
-                    1] <= HEIGHT * 3 // 4 + 50:
+                elif WIDTH * 3 // 4 - button_width // 2 <= mouse_pos[
+                    0] <= WIDTH * 3 // 4 + button_width // 2 and HEIGHT * 3 // 4 <= mouse_pos[
+                    1] <= HEIGHT * 3 // 4 + button_height:
                     return False
     return False
 
