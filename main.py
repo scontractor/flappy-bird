@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -16,10 +17,22 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
+# Load images
+current_path = os.path.dirname(__file__)
+image_path = os.path.join(current_path, 'images')
+
+background = pygame.image.load(os.path.join(image_path, 'background.jpg')).convert()
+background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
+bird_img = pygame.image.load(os.path.join(image_path, 'bird.png')).convert_alpha()
+bird_img = pygame.transform.scale(bird_img, (40, 30))
+
+pipe_img = pygame.image.load(os.path.join(image_path, 'pipe.png')).convert_alpha()
+pipe_img = pygame.transform.scale(pipe_img, (70, 500))
+
 # Bird properties
 bird_x = 50
 bird_y = HEIGHT // 2
-bird_radius = 20
 bird_velocity = 0
 gravity = 0.5
 jump_strength = -10
@@ -34,24 +47,28 @@ pipes = []
 score = 0
 font = pygame.font.Font(None, 36)
 
-def draw_bird():
-    pygame.draw.circle(screen, WHITE, (bird_x, int(bird_y)), bird_radius)
-
 def create_pipe():
     gap_y = random.randint(100, HEIGHT - 100 - pipe_gap)
-    pipes.append({"x": WIDTH, "top": gap_y - pipe_gap // 2, "bottom": gap_y + pipe_gap // 2})
+    top_pipe = pipe_img
+    bottom_pipe = pygame.transform.flip(pipe_img, False, True)
+    return {
+        "x": WIDTH,
+        "top": {"y": gap_y - pipe_gap // 2 - pipe_img.get_height(), "image": top_pipe},
+        "bottom": {"y": gap_y + pipe_gap // 2, "image": bottom_pipe}
+    }
 
 def draw_pipes():
     for pipe in pipes:
-        pygame.draw.rect(screen, GREEN, (pipe["x"], 0, pipe_width, pipe["top"]))
-        pygame.draw.rect(screen, GREEN, (pipe["x"], pipe["bottom"], pipe_width, HEIGHT - pipe["bottom"]))
+        screen.blit(pipe["top"]["image"], (pipe["x"], pipe["top"]["y"]))
+        screen.blit(pipe["bottom"]["image"], (pipe["x"], pipe["bottom"]["y"]))
 
-def check_collision():
+def check_collision(bird_rect):
     for pipe in pipes:
-        if (pipe["x"] < bird_x + bird_radius < pipe["x"] + pipe_width and
-            (bird_y - bird_radius < pipe["top"] or bird_y + bird_radius > pipe["bottom"])):
+        top_rect = pygame.Rect(pipe["x"], pipe["top"]["y"], pipe_width, pipe_img.get_height())
+        bottom_rect = pygame.Rect(pipe["x"], pipe["bottom"]["y"], pipe_width, pipe_img.get_height())
+        if bird_rect.colliderect(top_rect) or bird_rect.colliderect(bottom_rect):
             return True
-    if bird_y + bird_radius > HEIGHT or bird_y - bird_radius < 0:
+    if bird_rect.top < 0 or bird_rect.bottom > HEIGHT:
         return True
     return False
 
@@ -62,7 +79,7 @@ def draw_button(text, x, y, width, height, color, text_color):
     screen.blit(text_surface, text_rect)
 
 def game_over_screen():
-    screen.fill(BLACK)
+    screen.blit(background, (0, 0))
     game_over_text = font.render("Game Over", True, RED)
     score_text = font.render(f"Score: {score}", True, WHITE)
     screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 3))
@@ -111,7 +128,7 @@ while running:
 
     # Create and move pipes
     if len(pipes) == 0 or pipes[-1]["x"] < WIDTH - 200:
-        create_pipe()
+        pipes.append(create_pipe())
 
     for pipe in pipes:
         pipe["x"] -= pipe_velocity
@@ -120,7 +137,8 @@ while running:
     pipes = [pipe for pipe in pipes if pipe["x"] + pipe_width > 0]
 
     # Check for collisions
-    if check_collision():
+    bird_rect = bird_img.get_rect(center=(bird_x, bird_y))
+    if check_collision(bird_rect):
         if game_over_screen():
             reset_game()
         else:
@@ -131,9 +149,9 @@ while running:
     score += 1
 
     # Draw everything
-    screen.fill(BLACK)
-    draw_bird()
+    screen.blit(background, (0, 0))
     draw_pipes()
+    screen.blit(bird_img, bird_rect)
 
     # Display score
     score_text = font.render(f"Score: {score}", True, WHITE)
